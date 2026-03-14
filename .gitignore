@@ -1,0 +1,7 @@
+*.gem
+.bundle/
+.claude/
+.ruby-lsp/
+CLAUDE.md
+pkg/
+tmp/
