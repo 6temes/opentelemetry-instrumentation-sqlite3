@@ -40,23 +40,25 @@ module OpenTelemetry
           end
 
           def span_name(sql)
-            [extract_operation(sql), database_name].compact.join(" ").then { _1.empty? ? "SQL" : _1 }
+            [ extract_operation(sql), database_name ].compact.join(" ").then { _1.empty? ? "SQL" : _1 }
           end
 
           def span_attributes(sql)
+            operation = extract_operation(sql)
+
             attributes = {
-              "db.system" => "sqlite"
+              ::OpenTelemetry::SemanticConventions::Trace::DB_SYSTEM => "sqlite"
             }
 
-            db = database_name
-            attributes["db.name"] = db if db
+            attributes[::OpenTelemetry::SemanticConventions::Trace::DB_NAME] = database_name if database_name
+            attributes[::OpenTelemetry::SemanticConventions::Trace::DB_OPERATION] = operation if operation
 
             case config[:db_statement]
             when :obfuscate
-              attributes["db.statement"] =
+              attributes[::OpenTelemetry::SemanticConventions::Trace::DB_STATEMENT] =
                 OpenTelemetry::Helpers::SqlProcessor.obfuscate_sql(sql, obfuscation_limit: config[:obfuscation_limit], adapter: :default)
             when :include
-              attributes["db.statement"] = sql
+              attributes[::OpenTelemetry::SemanticConventions::Trace::DB_STATEMENT] = sql
             end
 
             attributes

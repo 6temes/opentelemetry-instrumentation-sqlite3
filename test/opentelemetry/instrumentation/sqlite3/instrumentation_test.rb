@@ -15,7 +15,7 @@ class InstrumentationTest < Minitest::Test
   end
 
   def test_execute_creates_span
-    @db.execute("INSERT INTO users (name, email) VALUES (?, ?)", ["Alice", "alice@example.com"])
+    @db.execute("INSERT INTO users (name, email) VALUES (?, ?)", [ "Alice", "alice@example.com" ])
 
     spans = EXPORTER.finished_spans
     assert_equal 1, spans.length
@@ -40,7 +40,7 @@ class InstrumentationTest < Minitest::Test
     @db.execute("INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')")
     EXPORTER.reset
 
-    @db.query("SELECT * FROM users WHERE name = ?", ["Alice"])
+    @db.query("SELECT * FROM users WHERE name = ?", [ "Alice" ])
 
     spans = EXPORTER.finished_spans
     assert_equal 1, spans.length
@@ -127,5 +127,12 @@ class InstrumentationTest < Minitest::Test
 
     span = EXPORTER.finished_spans.first
     assert_equal "SELECT", span.name
+  end
+
+  def test_span_includes_db_operation
+    @db.execute("SELECT * FROM users")
+
+    span = EXPORTER.finished_spans.first
+    assert_equal "SELECT", span.attributes["db.operation"]
   end
 end
