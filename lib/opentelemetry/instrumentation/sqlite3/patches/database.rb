@@ -36,7 +36,13 @@ module OpenTelemetry
               attributes: span_attributes(sql),
               kind: :client,
               record_exception: config[:record_exception]
-            ) { yield }
+            ) do |span|
+              yield
+            rescue ::SQLite3::Exception => e
+              span.set_attribute "error.type", e.class.name
+              span.set_attribute "db.response.status_code", e.code.to_s if e.respond_to?(:code) && e.code
+              raise
+            end
           end
 
           def span_name(sql)
@@ -46,19 +52,16 @@ module OpenTelemetry
           def span_attributes(sql)
             operation = extract_operation(sql)
 
-            attributes = {
-              ::OpenTelemetry::SemanticConventions::Trace::DB_SYSTEM => "sqlite"
-            }
-
-            attributes[::OpenTelemetry::SemanticConventions::Trace::DB_NAME] = database_name if database_name
-            attributes[::OpenTelemetry::SemanticConventions::Trace::DB_OPERATION] = operation if operation
+            attributes = { "db.system.name" => "sqlite" }
+            attributes["db.namespace"] = database_name if database_name
+            attributes["db.operation.name"] = operation if operation
 
             case config[:db_statement]
             when :obfuscate
-              attributes[::OpenTelemetry::SemanticConventions::Trace::DB_STATEMENT] =
+              attributes["db.query.text"] =
                 OpenTelemetry::Helpers::SqlProcessor.obfuscate_sql(sql, obfuscation_limit: config[:obfuscation_limit], adapter: :default)
             when :include
-              attributes[::OpenTelemetry::SemanticConventions::Trace::DB_STATEMENT] = sql
+              attributes["db.query.text"] = sql
             end
 
             attributes

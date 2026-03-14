@@ -23,14 +23,14 @@ class InstrumentationTest < Minitest::Test
     span = spans.first
     assert_equal "INSERT", span.name
     assert_equal :client, span.kind
-    assert_equal "sqlite", span.attributes["db.system"]
+    assert_equal "sqlite", span.attributes["db.system.name"]
   end
 
   def test_execute_obfuscates_sql_by_default
     @db.execute("INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com')")
 
     span = EXPORTER.finished_spans.first
-    statement = span.attributes["db.statement"]
+    statement = span.attributes["db.query.text"]
     assert_includes statement, "INSERT INTO users"
     refute_includes statement, "Alice"
     refute_includes statement, "alice@example.com"
@@ -86,7 +86,7 @@ class InstrumentationTest < Minitest::Test
     @db.execute("SELECT 1")
 
     span = EXPORTER.finished_spans.first
-    assert_equal "sqlite", span.attributes["db.system"]
+    assert_equal "sqlite", span.attributes["db.system.name"]
   end
 
   def test_span_includes_db_name_for_file_database
@@ -98,7 +98,7 @@ class InstrumentationTest < Minitest::Test
       db.close
 
       span = EXPORTER.finished_spans.last
-      assert_equal "test.sqlite3", span.attributes["db.name"]
+      assert_equal "test.sqlite3", span.attributes["db.namespace"]
     end
   end
 
@@ -106,7 +106,7 @@ class InstrumentationTest < Minitest::Test
     @db.execute("SELECT 1")
 
     span = EXPORTER.finished_spans.first
-    refute span.attributes.key?("db.name")
+    refute span.attributes.key?("db.namespace")
   end
 
   def test_records_exceptions
@@ -120,6 +120,9 @@ class InstrumentationTest < Minitest::Test
     events = span.events
     assert_equal 1, events.length
     assert_equal "exception", events.first.name
+
+    assert_equal "SQLite3::SQLException", span.attributes["error.type"]
+    assert_kind_of String, span.attributes["db.response.status_code"]
   end
 
   def test_span_name_includes_operation
@@ -133,6 +136,6 @@ class InstrumentationTest < Minitest::Test
     @db.execute("SELECT * FROM users")
 
     span = EXPORTER.finished_spans.first
-    assert_equal "SELECT", span.attributes["db.operation"]
+    assert_equal "SELECT", span.attributes["db.operation.name"]
   end
 end

@@ -19,7 +19,7 @@ class ConfigTest < Minitest::Test
       @db.execute("INSERT INTO users (name) VALUES ('Alice')")
 
       span = EXPORTER.finished_spans.first
-      assert_includes span.attributes["db.statement"], "Alice"
+      assert_includes span.attributes["db.query.text"], "Alice"
     end
   end
 
@@ -28,7 +28,7 @@ class ConfigTest < Minitest::Test
       @db.execute("INSERT INTO users (name) VALUES ('Alice')")
 
       span = EXPORTER.finished_spans.first
-      refute span.attributes.key?("db.statement")
+      refute span.attributes.key?("db.query.text")
     end
   end
 
@@ -37,7 +37,7 @@ class ConfigTest < Minitest::Test
       @db.execute("INSERT INTO users (name) VALUES ('Alice')")
 
       span = EXPORTER.finished_spans.first
-      statement = span.attributes["db.statement"]
+      statement = span.attributes["db.query.text"]
       assert_includes statement, "INSERT INTO users"
       refute_includes statement, "Alice"
     end

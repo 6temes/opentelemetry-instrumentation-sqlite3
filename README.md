@@ -69,7 +69,7 @@ All `SQLite3::Database` queries are now traced:
 ```ruby
 db = SQLite3::Database.new("app.sqlite3")
 db.execute("SELECT * FROM users WHERE id = ?", [42])
-# => Creates a span: name="SELECT app.sqlite3", db.system="sqlite", db.statement="SELECT * FROM users WHERE id = ?"
+# => Creates a span: name="SELECT app.sqlite3", db.system.name="sqlite", db.query.text="SELECT * FROM users WHERE id = ?"
 ```
 
 ## Configuration
@@ -94,16 +94,18 @@ Each span includes:
 
 | Attribute | Value | Example |
 |-----------|-------|---------|
-| `db.system` | `"sqlite"` | `"sqlite"` |
-| `db.name` | Database filename (basename) | `"app.sqlite3"` |
-| `db.operation` | SQL operation (first keyword) | `"SELECT"` |
-| `db.statement` | SQL (per `db_statement` config) | `"SELECT * FROM users WHERE id = ?"` |
+| `db.system.name` | `"sqlite"` | `"sqlite"` |
+| `db.namespace` | Database filename (basename) | `"app.sqlite3"` |
+| `db.operation.name` | SQL operation (first keyword) | `"SELECT"` |
+| `db.query.text` | SQL (per `db_statement` config) | `"SELECT * FROM users WHERE id = ?"` |
+| `error.type` | Exception class name (on errors) | `"SQLite3::SQLException"` |
+| `db.response.status_code` | SQLite error code (on errors) | `"1"` |
 
-SQLite-specific simplifications (compared to PG/Trilogy instrumentations):
+Uses [stable database semantic conventions](https://opentelemetry.io/docs/specs/semconv/database/database-spans/). SQLite-specific simplifications (compared to PG/Trilogy):
 
-- No `net.peer.name` or `net.peer.port` — SQLite is an embedded database
+- No `server.address` or `server.port` — SQLite is an embedded database
 - No `db.user` — SQLite has no authentication
-- `db.name` is `nil` for in-memory databases (`:memory:`)
+- `db.namespace` is `nil` for in-memory databases (`:memory:`)
 
 ## Instrumented Methods
 
