@@ -19,12 +19,16 @@ File.write(path, source.sub(pattern) { "#{$1}\"#{version}\"" })
 
 # The text match cannot tell a comment, a suffix or a later reassignment from
 # the real constant, so the stamped file is loaded and the constant read back.
-loaded, status = Open3.capture2(
-  { "RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil }, RbConfig.ruby, "--disable-gems", "-e",
-  "load ARGV[0]; print OpenTelemetry::Instrumentation::SQLite3::VERSION", path,
-  err: File::NULL
-)
-unless status.success? && loaded == version
-  File.write(path, source)
-  abort "#{path} does not load as VERSION #{version.inspect} once stamped"
+# RubyGems stays enabled because `gem build` loads the file with it.
+verified = false
+begin
+  loaded, status = Open3.capture2(
+    { "RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil }, RbConfig.ruby, "-e",
+    "load ARGV[0]; print OpenTelemetry::Instrumentation::SQLite3::VERSION", File.expand_path(path),
+    err: File::NULL
+  )
+  verified = status.success? && loaded == version
+ensure
+  File.write(path, source) unless verified
 end
+abort "#{path} does not load as VERSION #{version.inspect} once stamped" unless verified

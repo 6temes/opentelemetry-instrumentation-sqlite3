@@ -49,7 +49,11 @@ class StampVersionTest < Minitest::Test
   def test_rejects_a_placeholder_followed_by_a_second_version_assignment
     placeholder = File.read(VERSION_FILE)
 
-    [ "=begin\n      VERSION = \"9.9.9\"\n=end\n", "      VERSION = \"9.9.9\".freeze\n" ].each do |second|
+    [
+      "=begin\n      VERSION = \"9.9.9\"\n=end\n",
+      "      VERSION = \"9.9.9\".freeze\n",
+      "      VERSION = \"9.9.9\".freeze if defined?(Gem)\n"
+    ].each do |second|
       shadowed = placeholder.sub("    end\n") { "#{second}    end\n" }
       File.write(@path, shadowed)
 
