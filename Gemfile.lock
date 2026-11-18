@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    opentelemetry-instrumentation-sqlite3 (0.1.0)
+    opentelemetry-instrumentation-sqlite3 (0.0.1.dev)
       cgi
       opentelemetry-helpers-sql
       opentelemetry-helpers-sql-processor
@@ -173,7 +173,7 @@ CHECKSUMS
   opentelemetry-helpers-sql (0.4.0) sha256=b10e8c3a2cca28a98af951bbb3e4efdc59e68b25ba0825e055574af543420afb
   opentelemetry-helpers-sql-processor (0.5.1) sha256=c0a054c56429b549af33b7af9ad1db9db2cc33f1267fe120cbee4241fb6cf825
   opentelemetry-instrumentation-base (0.27.0) sha256=e55edb82cd0b018e82e746be61fa36cb05b7b68b2fa37f0e4a96b923ad3d7735
-  opentelemetry-instrumentation-sqlite3 (0.1.0)
+  opentelemetry-instrumentation-sqlite3 (0.0.1.dev)
   opentelemetry-logs-api (0.6.0) sha256=b889ac61d90326bffadb83bf7278d246d1086e2349c9052aeb072ed375ce73d0
   opentelemetry-metrics-api (0.9.0) sha256=e11a12055113e11421313f71c758e5e10e4662e9e5c3b91786218a692e81206d
   opentelemetry-registry (0.6.3) sha256=568fa8eaea94394f29f4fce3f0339ab10c3bf6d6c8beed6b3cfee6fd37fcc608
