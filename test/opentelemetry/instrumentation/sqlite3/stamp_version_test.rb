@@ -67,6 +67,7 @@ class StampVersionTest < Minitest::Test
       refute status.success?, "stamped #{source.inspect}"
       assert_match "does not load as", stderr
       assert_equal source, File.read(@path)
+      refute File.exist?("#{@path}.stamped")
     end
   end
 
