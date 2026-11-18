@@ -2,12 +2,17 @@
 
 ## Releasing
 
-Publishing the release draft is the whole release. Release Drafter keeps the draft current from the titles of PRs merged to `main`. A PR labelled `major`, `minor` or `patch` bumps that part of the version, and an unlabelled PR bumps the patch. Publishing the draft creates the `vX.Y.Z` tag. The `Release` workflow then runs CI on the tagged commit and, only if it passes, stamps the tag's version into `lib/opentelemetry/instrumentation/sqlite3/version.rb`, builds the gem and pushes it to RubyGems. There is no version-bump commit and no local step. In the repository `VERSION` stays at the placeholder `0.0.1.dev`.
+Publishing the release draft is the whole release: there is no version-bump commit, no local step and no API key.
 
-Release Drafter skips prereleases: it drafts only stable releases, and it ignores published prereleases when it picks the last release to bump from.
+1. Every push to `main` updates a draft GitHub release from the merged pull request titles. Its version bumps the last published release: a pull request labelled `major` or `minor` bumps that part, and any other pull request bumps the patch.
+2. Publish the draft. Its `vX.Y.Z` tag runs `release.yml`, which runs `ci.yml` on the tagged commit and, only if that passes, stamps the version into `lib/opentelemetry/instrumentation/sqlite3/version.rb` with `bin/stamp-version`, builds the gem and pushes it through RubyGems trusted publishing in the `release` environment.
 
-The gem's trusted publisher on rubygems.org must name workflow `release.yml` and environment `release`.
+`lib/opentelemetry/instrumentation/sqlite3/version.rb` holds the placeholder `0.0.1.dev` and is never bumped by hand.
 
-### When a publish fails
+Release Drafter skips prereleases: drafts are never prereleases, and a published prerelease is ignored when it picks the release to bump from.
 
-Release tags are never moved or deleted, even when the publish for one failed. Fix the cause on `main` and release the next version from the next draft. Before publishing that draft, regenerate its notes so they also cover the changes the failed version would have shipped.
+The trusted publisher on rubygems.org must name workflow `release.yml` and environment `release`; a blank environment field accepts any environment. The release shape is described in the [Gem release section of the CI standard](https://github.com/6temes/claude-plugins/blob/main/docs/ci-standard.md#gem-release).
+
+### Recovering from a failed publish
+
+Release tags are never moved or deleted. Fix the cause and re-run the failed `publish` job on the same tag. If that tag cannot be released, because the tagged commit is broken or the run is too old to re-run, leave its tag and release in place and ship the fix as the next version. Before publishing that next draft, regenerate its notes by re-running the latest `Release Drafter` run on `main`, and add back any changes the failed release never shipped.

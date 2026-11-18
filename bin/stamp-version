@@ -1,34 +1,33 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "open3"
+# Stamps a release version into version.rb before the gem is built:
+#
+#   bin/stamp-version VERSION FILE
+#
+# Stdlib only: the publish job installs no gems.
 
 abort "usage: bin/stamp-version VERSION FILE" unless ARGV.size == 2
 version, path = ARGV
 
+# `1.2.3-rc1` builds as `1.2.3.pre.rc1`, and the publish job pushes the gem file
+# named for the tag, which would then not exist.
 unless Gem::Version.correct?(version) && Gem::Version.new(version).to_s == version
-  abort "not a releasable version: #{version.inspect}"
+  abort "stamp-version: #{version.inspect} is not a canonical gem version"
 end
 
 pattern = /^(\s*VERSION = )"[^"]*"$/
 source = File.read(path)
-matches = source.scan(pattern).size
-abort "expected one VERSION literal in #{path}, found #{matches}" unless matches == 1
+count = source.scan(pattern).size
+abort "stamp-version: expected one VERSION literal in #{path}, found #{count}" unless count == 1
 
-File.write(path, source.sub(pattern) { "#{$1}\"#{version}\"" })
+File.write path, source.sub(pattern) { "#{$1}\"#{version}\"" }
 
-# The text match cannot tell a comment, a suffix or a later reassignment from
-# the real constant, so the stamped file is loaded and the constant read back.
-# RubyGems stays enabled because `gem build` loads the file with it.
-verified = false
-begin
-  loaded, status = Open3.capture2(
-    { "RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil }, RbConfig.ruby, "-e",
-    "load ARGV[0]; print OpenTelemetry::Instrumentation::SQLite3::VERSION", File.expand_path(path),
-    err: File::NULL
-  )
-  verified = status.success? && loaded == version
-ensure
-  File.write(path, source) unless verified
+# The pattern cannot see a block comment, a suffix or a later reassignment, so
+# Ruby loads the stamped file as `gem build` would and compares the constant
+# itself. Only the exit status is read: the file could print anything.
+check = "load ARGV[0]; exit(OpenTelemetry::Instrumentation::SQLite3::VERSION == ARGV[1])"
+unless system({ "RUBYOPT" => nil, "BUNDLE_GEMFILE" => nil }, RbConfig.ruby, "-e", check, path, version, out: File::NULL, err: File::NULL)
+  File.write path, source
+  abort "stamp-version: #{path} does not load as #{version.inspect}; restored it"
 end
-abort "#{path} does not load as VERSION #{version.inspect} once stamped" unless verified
