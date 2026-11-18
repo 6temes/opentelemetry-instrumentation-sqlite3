@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require "open3"
+
 abort "usage: bin/stamp-version VERSION FILE" unless ARGV.size == 2
 version, path = ARGV
 
@@ -14,3 +16,15 @@ matches = source.scan(pattern).size
 abort "expected one VERSION literal in #{path}, found #{matches}" unless matches == 1
 
 File.write(path, source.sub(pattern) { "#{$1}\"#{version}\"" })
+
+# The text match cannot tell a comment, a suffix or a later reassignment from
+# the real constant, so the stamped file is loaded and the constant read back.
+loaded, status = Open3.capture2(
+  { "RUBYOPT" => nil }, RbConfig.ruby, "--disable-gems", "-e",
+  "load ARGV[0]; print OpenTelemetry::Instrumentation::SQLite3::VERSION", path,
+  err: File::NULL
+)
+unless status.success? && loaded == version
+  File.write(path, source)
+  abort "#{path} does not load as VERSION #{version.inspect} once stamped"
+end

@@ -46,6 +46,20 @@ class StampVersionTest < Minitest::Test
     assert_equal "module Foo\nend\n", File.read(@path)
   end
 
+  def test_rejects_a_placeholder_followed_by_a_second_version_assignment
+    placeholder = File.read(VERSION_FILE)
+
+    [ "=begin\n      VERSION = \"9.9.9\"\n=end\n", "      VERSION = \"9.9.9\".freeze\n" ].each do |second|
+      shadowed = placeholder.sub("    end\n") { "#{second}    end\n" }
+      File.write(@path, shadowed)
+
+      _, status = stamp("1.2.3")
+
+      refute status.success?, "expected a stamp shadowed by #{second.inspect} to fail"
+      assert_equal shadowed.b, File.binread(@path)
+    end
+  end
+
   private
     def stamp(version)
       unbundled_ruby(SCRIPT, version, @path)
