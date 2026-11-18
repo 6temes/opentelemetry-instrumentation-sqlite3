@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Usage: bin/stamp-version VERSION FILE
+#
+# Rewrites the VERSION literal in FILE. The release workflow runs it on the
+# tagged checkout before `gem build`, so the tag is the only source of a
+# released version.
+
+abort "usage: bin/stamp-version VERSION FILE" unless ARGV.size == 2
+version, path = ARGV
+
+# A version rubygems would normalise (1.2.3-rc1 builds as 1.2.3.pre.rc1) would
+# build a gem whose file name no longer matches the tag.
+unless Gem::Version.correct?(version) && Gem::Version.new(version).to_s == version
+  abort "not a releasable version: #{version.inspect}"
+end
+
+pattern = /^(\s*VERSION = )"[^"]*"$/
+source = File.read(path)
+matches = source.scan(pattern).size
+abort "expected one VERSION literal in #{path}, found #{matches}" unless matches == 1
+
+File.write(path, source.sub(pattern) { "#{$1}\"#{version}\"" })
