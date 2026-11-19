@@ -119,7 +119,7 @@ The following `SQLite3::Database` methods are wrapped with spans:
 
 ## Compatibility
 
-- Ruby >= 4.0
+- Ruby >= 4.0.10
 - sqlite3 gem >= 2.0, < 3.0
 
 ## License
